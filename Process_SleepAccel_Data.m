@@ -190,15 +190,15 @@ for i = 1:length(dataCell)
 %         disp('Q3 adds to 1, yay!')
 %     end 
 
-    % Calculate measures for Q4
+    % Calculate measures for Q4 (need to account for extra time points here, use length(Q4_index))
     Q4_REM = sum(labeled_states(Q4_index) == 2);
-    Q4_REM_proportion(i) = Q4_REM/dur_of_quarters;
+    Q4_REM_proportion(i) = Q4_REM/length(Q4_index);
 
     Q4_NREM = sum(labeled_states(Q4_index) == 1);
-    Q4_NREM_proportion(i) = Q4_NREM/dur_of_quarters;
+    Q4_NREM_proportion(i) = Q4_NREM/length(Q4_index);
 
     Q4_WAKE = sum(labeled_states(Q4_index) == 0);
-    Q4_WAKE_proportion(i) = Q4_WAKE/dur_of_quarters;
+    Q4_WAKE_proportion(i) = Q4_WAKE/length(Q4_index);
 
 %     % Check
 %     if (Q4_REM_proportion+Q4_NREM_proportion+Q4_WAKE_proportion) ~= 1
