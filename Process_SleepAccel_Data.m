@@ -40,7 +40,7 @@ clc
 % Each cell contains the contents of one file
 
 % === CONFIGURATION ===
-folderPath = 'OG_data_files';
+folderPath = 'Walch_data_files';
 
 % Get list of all .txt files in the folder
 fileList = dir(fullfile(folderPath, '*.txt'));
