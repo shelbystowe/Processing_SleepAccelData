@@ -52,15 +52,15 @@ for k = 1:numel(fileList)
             dataCell{k} = numericData;
         end
         
-        fprintf('Loaded file: %s\n', fileList(k).name);
+        %fprintf('Loaded file: %s\n', fileList(k).name);
     catch ME
         warning('Could not read file "%s": %s', fileList(k).name, ME.message);
         dataCell{k} = [];
     end
 end
 
-
-W_data = Process_SleepAccel_Data_function(dataCell); 
+% Call the function Process_SleepAccel_Data and pass it the dataCell of .txt files 
+W = Process_SleepAccel_Data(dataCell); 
 
 
 
@@ -68,6 +68,49 @@ W_data = Process_SleepAccel_Data_function(dataCell);
 % 
 
 
+%% Print to command window 
+
+% REM Onset Latency 
+fprintf('SleepAccel Data Mean REM onset latency: %.2f ± %.2f minutes\n', W.REM_onset_mean, W.REM_onset_sd);
+fprintf('SleepAccel Data Range of REM onset latency: %.2f minutes\n', W.REM_onset_range);
+
+% Long WASOs
+fprintf('SleepAccel Data Mean Number of Long WASOs: %.2f ± %.2f minutes\n', W.Long_WASO_mean, W.Long_WASO_sd);
+fprintf('SleepAccel Data Range of Long WASOs: %.2f minutes\n', W.Long_WASO_range);
+
 %% Plot bar graphs of measurements from both data sets 
 
+figure()
+% REM
+subplot(1,3,1)
+% Create bars
+b = bar(W.Q_REM_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, W.Q_REM_means, W.Q_REM_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+title('REM')
+
+% NREM
+subplot(1,3,2)
+% Create bars 
+b = bar(W.Q_NREM_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, W.Q_NREM_means, W.Q_NREM_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+title('NREM')
+
+% WAKE
+subplot(1,3,3)
+% Create bars
+b = bar(W.Q_WAKE_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, W.Q_WAKE_means, W.Q_WAKE_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+title('WAKE')
 
