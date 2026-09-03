@@ -1,6 +1,92 @@
-function W = Process_SleepAccel_Data_function(dataCell)
+%% SleepAccel Dataset Processing
 
-% Processes .txt files of EEG data from SleepAccel data set (sleepdata.org)
+% NOTE: This was my original code to process the data, but I improved the
+    % workflow by converting this into the function (Process_SleepAccel_Data.m) and creating
+    % Main_Data_Processing.m
+
+% Shelby Stowe
+% August 2026
+% Colorado School of Mines 
+
+% Read in the .txt files (downloaded from sleepdata.org)
+
+% Loop over each data file to: 
+    % Optional: plot hypnogram 
+    % Calculate: 
+        % total WAKE
+        % total REM
+        % total NREM
+        % total sleep 
+        % Output mean, SD, and range
+    % Determine:
+        % REM onset latency (how long until REM is entered?)
+        % How many long WASOs (>6mins)?
+
+
+% Quarter of the night analysis
+    % Calculate the duration of the sleep episode (should always >7hrs)
+    % Divide that duration by 4
+    % Calculate the following measurements for each quarter:
+        % Proportion of quarter that is REM
+        % Proportion of quarter that is NREM
+        % Proportion of quarter that is WAKE
+
+
+
+%% Set up 
+
+clear all
+close all
+clc
+
+%% Read in the .txt files (downloaded from sleepdata.org)
+% This script reads each file into a cell array 'dataCell'
+% Each cell contains the contents of one file
+
+% === CONFIGURATION ===
+folderPath = 'Walch_data_files';
+
+% Get list of all .txt files in the folder
+fileList = dir(fullfile(folderPath, '*.txt'));
+
+% Check if any files found
+if isempty(fileList)
+    error('No .txt files found in the selected folder.');
+end
+
+% Preallocate cell array to store data
+dataCell = cell(numel(fileList), 1);
+
+% Loop through each file and load it
+for k = 1:numel(fileList)
+    filePath = fullfile(folderPath, fileList(k).name);
+    try
+        % Try reading as numeric data first
+        numericData = readmatrix(filePath);
+        
+        % If file contains only text or mixed data, use readtable
+        if all(isnan(numericData), 'all')
+            dataCell{k} = readtable(filePath, 'FileType', 'text');
+        else
+            dataCell{k} = numericData;
+        end
+        
+        fprintf('Loaded file: %s\n', fileList(k).name);
+    catch ME
+        warning('Could not read file "%s": %s', fileList(k).name, ME.message);
+        dataCell{k} = [];
+    end
+end
+
+
+
+%% Loop over each data file to calculate and determine items of interest
+    % total WAKE
+    % total REM
+    % total NREM
+    % total sleep
+    % REM onset latency (how long until REM is entered?)
+    % How many long WASOs (>6mins)?
 
 % Initialize arrays to store totals for each state for each participant
 total_wake = []; % mins
@@ -209,23 +295,73 @@ for i = 1:length(dataCell)
 
 end
 
-% Compute results (mean, sd, and range) of measurements across participants
-% Save these results to W
+%% Compute mean and standard deviation for each state across participants
+mean_WASO = mean(total_wake);
+std_WASO = std(total_wake);
+range_WASO = [min(total_wake), max(total_wake)];
 
-% Compute the mean and SD of REM onset latency  
-W.REM_onset_mean = mean(REM_onset_latency, 2);  % mean along row
-W.REM_onset_sd   = std(REM_onset_latency, 0, 2); % standard deviation along row
-W.REM_onset_range = [min(REM_onset_latency), max(REM_onset_latency)];
+mean_time_in_nrem = mean(total_NREM);
+std_time_in_nrem = std(total_NREM);
+range_time_in_NREM = [min(total_NREM), max(total_NREM)];
 
-% Quarter of night analysis
+mean_time_in_rem = mean(total_REM);
+std_time_in_rem = std(total_REM);
+range_time_in_REM = [min(total_REM), max(total_REM)];
+
+mean_total_sleep = mean(total_sleep);
+std_total_sleep = std(total_sleep);
+range_TST = [min(total_sleep), max(total_sleep)];
+
+% Display the results across participants
+fprintf('Mean WASO: %.2f ± %.2f minutes\n', mean_WASO, std_WASO); 
+fprintf('Range of WASO: %.2f \n', range_WASO);
+
+fprintf('Mean time in NREM: %.2f ± %.2f minutes\n', mean_time_in_nrem, std_time_in_nrem); 
+fprintf('Range of time in NREM: %.2f \n', range_time_in_NREM);
+
+fprintf('Mean time in REM: %.2f ± %.2f minutes\n', mean_time_in_rem, std_time_in_rem);
+fprintf('Range of time in REM: %.2f \n', range_time_in_REM);
+
+fprintf('Mean TST: %.2f ± %.2f minutes\n', mean_total_sleep, std_total_sleep);
+fprintf('Range of TST: %.2f \n', range_TST);
+
+
+%% Compute the mean and SD of REM onset latency 
+REM_onset_mean = mean(REM_onset_latency, 2);  % mean along row
+REM_onset_sd   = std(REM_onset_latency, 0, 2); % standard deviation along row
+REM_onset_range = [min(REM_onset_latency), max(REM_onset_latency)];
+
+fprintf('Mean REM onset latency: %.2f ± %.2f minutes\n', REM_onset_mean, REM_onset_sd);
+fprintf('Range of REM onset latency: %.2f \n', REM_onset_range);
+
+
+%% Plot results of quarter of night analysis
 % REM
 Q_REM = [Q1_REM_proportion;
     Q2_REM_proportion;
     Q3_REM_proportion;
     Q4_REM_proportion];
 
-W.Q_REM_means = mean(Q_REM, 2);  % mean along rows
-W.Q_REM_sds   = std(Q_REM, 0, 2); % standard deviation along rows
+Q_REM_means = mean(Q_REM, 2);  % mean along rows
+Q_REM_sds   = std(Q_REM, 0, 2); % standard deviation along rows
+
+figure()
+b = bar(Q_REM_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, Q_REM_means, Q_REM_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+
+% Formatting
+xlabel('Quarter of the Night');
+ylabel('Proportions');
+title('REM Proportion with Mean ± SD');
+xticks(x);
+grid on;
+box on;
+set(gca, 'FontSize', 12);
 
 % NREM
 Q_NREM = [Q1_NREM_proportion;
@@ -233,8 +369,26 @@ Q_NREM = [Q1_NREM_proportion;
     Q3_NREM_proportion;
     Q4_NREM_proportion];
 
-W.Q_NREM_means = mean(Q_NREM, 2);  % mean along rows
-W.Q_NREM_sds   = std(Q_NREM, 0, 2); % standard deviation along rows
+Q_NREM_means = mean(Q_NREM, 2);  % mean along rows
+Q_NREM_sds   = std(Q_NREM, 0, 2); % standard deviation along rows
+
+figure()
+b = bar(Q_NREM_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, Q_NREM_means, Q_NREM_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+
+% Formatting
+xlabel('Quarter of the Night');
+ylabel('Proportions');
+title('NREM Proportion with Mean ± SD');
+xticks(x);
+grid on;
+box on;
+set(gca, 'FontSize', 12);
 
 % WAKE
 Q_WAKE = [Q1_WAKE_proportion;
@@ -242,7 +396,23 @@ Q_WAKE = [Q1_WAKE_proportion;
     Q3_WAKE_proportion;
     Q4_WAKE_proportion];
 
-W.Q_WAKE_means = mean(Q_WAKE, 2);  % mean along rows
-W.Q_WAKE_sds   = std(Q_WAKE, 0, 2); % standard deviation along rows
+Q_WAKE_means = mean(Q_WAKE, 2);  % mean along rows
+Q_WAKE_sds   = std(Q_WAKE, 0, 2); % standard deviation along rows
 
-end 
+figure()
+b = bar(Q_WAKE_means, 'FaceColor', [0.65 0.65 0.65]); % grey bars
+hold on;
+
+% Add error bars
+numGroups = 4;
+x = 1:numGroups; % x positions for bars
+errorbar(x, Q_WAKE_means, Q_WAKE_sds, 'k', 'LineStyle', 'none', 'LineWidth', 1.5);
+
+% Formatting
+xlabel('Quarter of the Night');
+ylabel('Proportions');
+title('WAKE Proportion with Mean ± SD');
+xticks(x);
+grid on;
+box on;
+set(gca, 'FontSize', 12);
